@@ -10,11 +10,6 @@ Route::get('/hlow', function () {
     return view('hlow');
 });
 
-Route::get('/multiplication', function () {
-    $j = 5;
-
-    return view('multiplication', compact('j'));
-});
 
 Route::get('/even-numbers', function () {
     return view('even-numbers');
@@ -50,7 +45,7 @@ Route::get('/b', function () {
     return view('b', compact('records'));
 });
 
-Route::get('/multable/{number?}', function ($number = null) {
+Route::get('/multiplication/{number?}', function ($number = null) {
     $j = $number??2;
-    return view('multable', compact('j')); //multable.blade.php
+    return view('multiplication', compact('j')); //multable.blade.php
 });
