@@ -40,37 +40,51 @@
         <div class="card-body">
             <form action="{{ route('products_list') }}" method="GET">
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="keywords" class="form-label">Search Keywords</label>
                         <input type="text" name="keywords" id="keywords" class="form-control" value="{{ request('keywords') }}">
                     </div>
 
                     <div class="col-md-2 mb-3">
                         <label for="min_price" class="form-label">Min Price</label>
-                        <input type="number" step="0.01" name="min_price" id="min_price" class="form-control" value="{{ request('min_price') }}">
+                        <input type="number" min="0" step="0.01" name="min_price" id="min_price" class="form-control" value="{{ $minPrice ?? request('min_price') }}">
                     </div>
 
                     <div class="col-md-2 mb-3">
                         <label for="max_price" class="form-label">Max Price</label>
-                        <input type="number" step="0.01" name="max_price" id="max_price" class="form-control" value="{{ request('max_price') }}">
+                        <input type="number" min="0" step="0.01" name="max_price" id="max_price" class="form-control" value="{{ $maxPrice ?? request('max_price') }}">
                     </div>
 
                     <div class="col-md-2 mb-3">
-                        <label for="order_by" class="form-label">Order By</label>
-                        <select name="order_by" id="order_by" class="form-control">
-                            <option value="">Select</option>
-                            <option value="name" {{ request('order_by') === 'name' ? 'selected' : '' }}>Name</option>
-                            <option value="price" {{ request('order_by') === 'price' ? 'selected' : '' }}>Price</option>
+                        <label for="product_type" class="form-label">Product Type</label>
+                        <select name="product_type" id="product_type" class="form-control">
+                            <option value="">All Types</option>
+                            @foreach ($productTypes as $type)
+                                <option value="{{ $type }}" {{ ($selectedType ?? '') === $type ? 'selected' : '' }}>{{ $type }}</option>
+                            @endforeach
                         </select>
                     </div>
 
-                    <div class="col-md-2 mb-3">
-                        <label for="order_direction" class="form-label">Order Direction</label>
-                        <select name="order_direction" id="order_direction" class="form-control">
-                            <option value="">Select</option>
-                            <option value="ASC" {{ request('order_direction') === 'ASC' ? 'selected' : '' }}>ASC</option>
-                            <option value="DESC" {{ request('order_direction') === 'DESC' ? 'selected' : '' }}>DESC</option>
-                        </select>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label d-block">Sort</label>
+                        <div class="border rounded p-3 bg-light">
+                            <div class="mb-2">
+                                <label for="name_sort" class="form-label">Name Sort</label>
+                                <select name="name_sort" id="name_sort" class="form-control">
+                                    <option value="">None</option>
+                                    <option value="asc" {{ ($nameSort ?? '') === 'asc' ? 'selected' : '' }}>A to Z</option>
+                                    <option value="desc" {{ ($nameSort ?? '') === 'desc' ? 'selected' : '' }}>Z to A</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="price_sort" class="form-label">Price Sort</label>
+                                <select name="price_sort" id="price_sort" class="form-control">
+                                    <option value="">None</option>
+                                    <option value="asc" {{ ($priceSort ?? '') === 'asc' ? 'selected' : '' }}>Low to High</option>
+                                    <option value="desc" {{ ($priceSort ?? '') === 'desc' ? 'selected' : '' }}>High to Low</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -126,6 +140,7 @@
                         </table>
 
                         <div class="mt-auto">
+                            <a href="{{ route('products_show', $product->id) }}" class="btn btn-success">View</a>
                             <a href="{{ route('products_edit', $product->id) }}" class="btn btn-primary">Edit</a>
                             <a href="{{ route('products_delete', $product->id) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
                         </div>

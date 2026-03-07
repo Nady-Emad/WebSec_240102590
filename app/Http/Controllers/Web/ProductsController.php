@@ -12,38 +12,69 @@ class ProductsController extends Controller
     {
         $query = Product::select('products.*');
 
-        $query->when($request->filled('keywords'), function ($builder) use ($request) {
-            $builder->where('products.name', 'like', '%' . $request->keywords . '%');
+        $keywords = trim((string) $request->get('keywords', ''));
+        $minPrice = $request->filled('min_price') ? max(0, (float) $request->get('min_price')) : null;
+        $maxPrice = $request->filled('max_price') ? max(0, (float) $request->get('max_price')) : null;
+        $selectedType = trim((string) $request->get('product_type', ''));
+
+        if ($minPrice !== null && $maxPrice !== null && $maxPrice < $minPrice) {
+            [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
+        }
+
+        $query->when($keywords !== '', function ($builder) use ($keywords) {
+            $builder->where('products.name', 'like', '%' . $keywords . '%');
         });
 
-        $query->when($request->filled('min_price'), function ($builder) use ($request) {
-            $builder->where('products.price', '>=', $request->min_price);
+        $query->when($minPrice !== null, function ($builder) use ($minPrice) {
+            $builder->where('products.price', '>=', $minPrice);
         });
 
-        $query->when($request->filled('max_price'), function ($builder) use ($request) {
-            $builder->where('products.price', '<=', $request->max_price);
+        $query->when($maxPrice !== null, function ($builder) use ($maxPrice) {
+            $builder->where('products.price', '<=', $maxPrice);
         });
 
-        $orderBy = $request->get('order_by');
-        $orderDirection = strtoupper($request->get('order_direction', 'ASC'));
+        $query->when($selectedType !== '', function ($builder) use ($selectedType) {
+            $builder->where('products.model', '=', $selectedType);
+        });
 
-        $allowedOrderBy = ['name', 'price'];
-        $allowedOrderDirection = ['ASC', 'DESC'];
+        $nameSort = strtolower((string) $request->input('name_sort', ''));
+        $priceSort = strtolower((string) $request->input('price_sort', ''));
 
-        $query->when(
-            in_array($orderBy, $allowedOrderBy, true),
-            function ($builder) use ($orderBy, $orderDirection, $allowedOrderDirection) {
-                $direction = in_array($orderDirection, $allowedOrderDirection, true) ? $orderDirection : 'ASC';
-                $builder->orderBy("products.{$orderBy}", $direction);
-            },
-            function ($builder) {
-                $builder->orderBy('products.id', 'DESC');
-            }
-        );
+        $validDirections = ['asc', 'desc'];
+        $hasNameSort = in_array($nameSort, $validDirections, true);
+        $hasPriceSort = in_array($priceSort, $validDirections, true);
+
+        if ($hasNameSort && $hasPriceSort) {
+            // When both are selected, apply both sorts together in a visible way.
+            $query->orderBy('products.price', strtoupper($priceSort));
+            $query->orderBy('products.name', strtoupper($nameSort));
+        } elseif ($hasPriceSort) {
+            $query->orderBy('products.price', strtoupper($priceSort));
+        } elseif ($hasNameSort) {
+            $query->orderBy('products.name', strtoupper($nameSort));
+        } else {
+            $query->orderBy('products.id', 'DESC');
+        }
+
+        // Keep ordering stable when values are equal.
+        $query->orderBy('products.id', 'DESC');
 
         $products = $query->get();
 
-        return view('products.list', compact('products'));
+        $productTypes = Product::query()
+            ->select('model')
+            ->whereNotNull('model')
+            ->where('model', '!=', '')
+            ->distinct()
+            ->orderBy('model', 'ASC')
+            ->pluck('model');
+
+        return view('products.list', compact('products', 'minPrice', 'maxPrice', 'selectedType', 'productTypes', 'nameSort', 'priceSort'));
+    }
+
+    public function show(Request $request, Product $product)
+    {
+        return view('products.show', compact('product'));
     }
 
     public function edit(Request $request, ?Product $product = null)
@@ -61,7 +92,16 @@ class ProductsController extends Controller
             $product = new Product();
         }
 
-        $product->fill($request->all());
+        $validatedData = $request->validate([
+            'code' => ['required', 'string', 'max:255'],
+            'model' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'photo' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $product->fill($validatedData);
         $product->save();
 
         return redirect()->route('products_list');

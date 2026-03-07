@@ -12,6 +12,16 @@
                 </div>
 
                 <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form action="{{ route('products_save', $product->id) }}" method="POST">
                         {{ csrf_field() }}
 
@@ -35,7 +45,7 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="price" class="form-label">Price</label>
-                                <input type="number" step="0.01" name="price" id="price" class="form-control" value="{{ old('price', $product->price) }}" required>
+                                <input type="number" min="0" step="0.01" name="price" id="price" class="form-control" value="{{ old('price', $product->price) }}" required>
                             </div>
                         </div>
 
@@ -44,6 +54,22 @@
                             <input type="text" name="photo" id="photo" class="form-control" value="{{ old('photo', $product->photo) }}" placeholder="https://example.com/product.jpg">
                             <small class="text-muted">You can enter a direct image URL or a local filename from public/images.</small>
                         </div>
+
+                        @php
+                            $photoValue = old('photo', $product->photo);
+                            $photoSrc = $photoValue
+                                ? (filter_var($photoValue, FILTER_VALIDATE_URL) ? $photoValue : asset("images/$photoValue"))
+                                : null;
+                        @endphp
+
+                        @if ($photoSrc)
+                            <div class="mb-3">
+                                <label class="form-label">Current Image</label>
+                                <div>
+                                    <img src="{{ $photoSrc }}" alt="{{ old('name', $product->name) }}" class="img-thumbnail" style="max-width: 260px; max-height: 260px; object-fit: contain;">
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>

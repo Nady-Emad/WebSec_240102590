@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Web\ProductsController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +65,7 @@ Route::get('/multiplication/{number?}', function ($number = null) {
 });
 
 Route::get('/products', [ProductsController::class, 'list'])->name('products_list');
+Route::get('/products/show/{product}', [ProductsController::class, 'show'])->name('products_show');
 Route::get('/products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
 Route::post('/products/save/{product?}', [ProductsController::class, 'save'])->name('products_save');
 Route::get('/products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
