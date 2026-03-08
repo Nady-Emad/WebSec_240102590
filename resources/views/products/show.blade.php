@@ -26,14 +26,28 @@
 
 @section('content')
     @php
-        $photoSrc = filter_var($product->photo, FILTER_VALIDATE_URL)
-            ? $product->photo
-            : asset("images/$product->photo");
+        $source = request()->query('from', 'lab1');
+        $isLab2Source = $source === 'lab2';
+
+        $photoValue = (string) ($product->photo ?? '');
+        $isHttpUrl = $photoValue !== ''
+            && filter_var($photoValue, FILTER_VALIDATE_URL)
+            && in_array(strtolower((string) parse_url($photoValue, PHP_URL_SCHEME)), ['http', 'https'], true);
+
+        if ($isHttpUrl) {
+            $photoSrc = $photoValue;
+        } elseif ($photoValue !== '' && \Illuminate\Support\Str::startsWith($photoValue, 'products/')) {
+            $photoSrc = asset('storage/' . $photoValue);
+        } else {
+            $photoSrc = asset('images/' . ($photoValue !== '' ? $photoValue : 'placeholder.png'));
+        }
     @endphp
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Product Details</h1>
-        <a href="{{ route('products_list') }}" class="btn btn-outline-secondary">Back to Products</a>
+        <a href="{{ $isLab2Source ? route('lab2.products.index') : route('lab1.products.index') }}" class="btn btn-outline-secondary">
+            Back to Products
+        </a>
     </div>
 
     <div class="content-card card">
@@ -68,10 +82,24 @@
                         </table>
                     </div>
 
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ route('products_edit', $product->id) }}" class="btn btn-primary">Edit Product</a>
-                        <a href="{{ route('products_delete', $product->id) }}" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
-                    </div>
+                    @if ($isLab2Source)
+                        <div class="d-flex flex-wrap gap-2">
+                            <form method="POST" action="{{ route('lab2.products.add_to_cart', $product) }}" class="m-0">
+                                @csrf
+                                <button type="submit" class="btn btn-primary">Add to Cart</button>
+                            </form>
+                            <a href="{{ route('lab2.products.index') }}" class="btn btn-outline-success">View Cart</a>
+                        </div>
+                    @else
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('lab1.products.edit', $product->id) }}" class="btn btn-primary">Edit Product</a>
+                            <form action="{{ route('lab1.products.destroy', $product->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger">Delete</button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

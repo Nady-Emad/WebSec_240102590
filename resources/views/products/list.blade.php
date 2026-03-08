@@ -31,15 +31,15 @@
             <h1 class="h3 mb-1">Products</h1>
             <p class="text-muted mb-0">Browse, filter, and manage your product catalog.</p>
         </div>
-        <a href="{{ route('products_edit') }}" class="btn btn-primary">Add Product</a>
+        <a href="{{ route('lab1.products.edit') }}" class="btn btn-primary">Add Product</a>
     </div>
 
     <div class="content-card card mb-4">
         <div class="card-body p-4">
-            <form action="{{ route('products_list') }}" method="GET" class="row g-3 align-items-end">
+            <form action="{{ route('lab1.products.index') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-6 col-lg-3">
                     <label for="keywords" class="form-label">Search</label>
-                    <input type="text" name="keywords" id="keywords" class="form-control" value="{{ request('keywords') }}" placeholder="Name keywords">
+                    <input type="text" name="keywords" id="keywords" class="form-control" value="{{ $keywords ?? request('keywords') }}" placeholder="Name keywords">
                 </div>
 
                 <div class="col-md-6 col-lg-2">
@@ -82,7 +82,7 @@
 
                 <div class="col-12 d-flex gap-2">
                     <button type="submit" class="btn btn-success">Apply Filters</button>
-                    <a href="{{ route('products_list') }}" class="btn btn-outline-secondary">Reset</a>
+                    <a href="{{ route('lab1.products.index') }}" class="btn btn-outline-secondary">Reset</a>
                 </div>
             </form>
         </div>
@@ -90,15 +90,24 @@
 
     <div class="row g-4">
         @forelse ($products as $product)
+            @php
+                $photoValue = (string) ($product->photo ?? '');
+                $isHttpUrl = $photoValue !== ''
+                    && filter_var($photoValue, FILTER_VALIDATE_URL)
+                    && in_array(strtolower((string) parse_url($photoValue, PHP_URL_SCHEME)), ['http', 'https'], true);
+
+                if ($isHttpUrl) {
+                    $photoSrc = $photoValue;
+                } elseif ($photoValue !== '' && \Illuminate\Support\Str::startsWith($photoValue, 'products/')) {
+                    $photoSrc = asset('storage/' . $photoValue);
+                } else {
+                    $photoSrc = asset('images/' . ($photoValue !== '' ? $photoValue : 'placeholder.png'));
+                }
+            @endphp
+
             <div class="col-md-6 col-xl-4">
                 <div class="content-card card h-100">
                     <div class="card-body d-flex flex-column">
-                        @php
-                            $photoSrc = filter_var($product->photo, FILTER_VALIDATE_URL)
-                                ? $product->photo
-                                : asset("images/$product->photo");
-                        @endphp
-
                         <div class="product-image-wrapper mb-3">
                             <img src="{{ $photoSrc }}" alt="{{ $product->name }}" class="product-image" loading="lazy">
                         </div>
@@ -127,9 +136,13 @@
                         @endif
 
                         <div class="mt-auto d-flex flex-wrap gap-2">
-                            <a href="{{ route('products_show', $product->id) }}" class="btn btn-outline-success btn-sm">View</a>
-                            <a href="{{ route('products_edit', $product->id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
-                            <a href="{{ route('products_delete', $product->id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                            <a href="{{ route('lab1.products.show', ['product' => $product->id, 'from' => 'lab1']) }}" class="btn btn-outline-success btn-sm">View</a>
+                            <a href="{{ route('lab1.products.edit', $product->id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <form action="{{ route('lab1.products.destroy', $product->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -140,4 +153,10 @@
             </div>
         @endforelse
     </div>
+
+    @if (method_exists($products, 'links'))
+        <div class="mt-4 d-flex justify-content-center">
+            {{ $products->links() }}
+        </div>
+    @endif
 @endsection
