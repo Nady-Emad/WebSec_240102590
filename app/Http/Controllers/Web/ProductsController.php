@@ -45,7 +45,6 @@ class ProductsController extends Controller
         $hasPriceSort = in_array($priceSort, $validDirections, true);
 
         if ($hasNameSort && $hasPriceSort) {
-            // When both are selected, apply both sorts together in a visible way.
             $query->orderBy('products.price', strtoupper($priceSort));
             $query->orderBy('products.name', strtoupper($nameSort));
         } elseif ($hasPriceSort) {
@@ -56,7 +55,6 @@ class ProductsController extends Controller
             $query->orderBy('products.id', 'DESC');
         }
 
-        // Keep ordering stable when values are equal.
         $query->orderBy('products.id', 'DESC');
 
         $products = $query->get();
@@ -88,6 +86,8 @@ class ProductsController extends Controller
 
     public function save(Request $request, ?Product $product = null)
     {
+        $isNew = ! $product;
+
         if (! $product) {
             $product = new Product();
         }
@@ -104,13 +104,18 @@ class ProductsController extends Controller
         $product->fill($validatedData);
         $product->save();
 
-        return redirect()->route('products_list');
+        return redirect()
+            ->route('products_list')
+            ->with('status', $isNew ? 'Product created successfully.' : 'Product updated successfully.');
     }
 
     public function delete(Request $request, Product $product)
     {
+        $productName = $product->name;
         $product->delete();
 
-        return redirect()->route('products_list');
+        return redirect()
+            ->route('products_list')
+            ->with('status', "Product '{$productName}' deleted successfully.");
     }
 }

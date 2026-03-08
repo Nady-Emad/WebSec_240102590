@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\ProductsController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -28,38 +29,14 @@ Route::get('/square-numbers', function () {
 });
 
 Route::get('/b', function () {
-    // Test records variable.
     $records = [1, 2, 3];
-
-    // Helper function to check prime numbers.
-    function isPrime($num)
-    {
-        if ($num < 2) {
-            return false;
-        }
-
-        if ($num == 2) {
-            return true;
-        }
-
-        if ($num % 2 == 0) {
-            return false;
-        }
-
-        for ($i = 3; $i <= sqrt($num); $i += 2) {
-            if ($num % $i == 0) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     return view('b', compact('records'));
 });
 
-Route::get('/multiplication/{number?}', function ($number = null) {
-    $j = $number ?? 2;
+Route::get('/multiplication/{number?}', function (Request $request, ?int $number = null) {
+    $requestedNumber = $request->integer('number');
+    $j = $requestedNumber > 0 ? $requestedNumber : ($number && $number > 0 ? $number : 2);
 
     return view('multiplication', compact('j'));
 });
